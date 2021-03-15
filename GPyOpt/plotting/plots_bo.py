@@ -14,87 +14,64 @@ def plot_acquisition(bounds, input_dim, model, Xdata, Ydata, acquisition_functio
     Plots of the model and the acquisition function in 1D and 2D examples.
     '''
 
-    # Plots in dimension 1
-    if input_dim == 1:
-        # X = np.arange(bounds[0][0], bounds[0][1], 0.001)
-        # X = X.reshape(len(X),1)
-        # acqu = acquisition_function(X)
-        # acqu_normalized = (-acqu - min(-acqu))/(max(-acqu - min(-acqu))) # normalize acquisition
-        # m, v = model.predict(X.reshape(len(X),1))
-        # plt.ioff()
-        # plt.figure(figsize=(10,5))
-        # plt.subplot(2, 1, 1)
-        # plt.plot(X, m, 'b-', label=u'Posterior mean',lw=2)
-        # plt.fill(np.concatenate([X, X[::-1]]), \
-        #         np.concatenate([m - 1.9600 * np.sqrt(v),
-        #                     (m + 1.9600 * np.sqrt(v))[::-1]]), \
-        #         alpha=.5, fc='b', ec='None', label='95% C. I.')
-        # plt.plot(X, m-1.96*np.sqrt(v), 'b-', alpha = 0.5)
-        # plt.plot(X, m+1.96*np.sqrt(v), 'b-', alpha=0.5)
-        # plt.plot(Xdata, Ydata, 'r.', markersize=10, label=u'Observations')
-        # plt.axvline(x=suggested_sample[len(suggested_sample)-1],color='r')
-        # plt.title('Model and observations')
-        # plt.ylabel('Y')
-        # plt.xlabel('X')
-        # plt.legend(loc='upper left')
-        # plt.xlim(*bounds)
-        # grid(True)
-        # plt.subplot(2, 1, 2)
-        # plt.axvline(x=suggested_sample[len(suggested_sample)-1],color='r')
-        # plt.plot(X,acqu_normalized, 'r-',lw=2)
-        # plt.xlabel('X')
-        # plt.ylabel('Acquisition value')
-        # plt.title('Acquisition function')
-        # grid(True)
-        # plt.xlim(*bounds)
+    if fixed_values is None:
+        fixed_values = [None] * input_dim
+
+    free_dimensions = []
+    for i, value in enumerate(fixed_values):
+        if value is None:
+            free_dimensions.append(i)
+
+    assert len(free_dimensions) == 2 or len(free_dimensions) == 1, \
+        "In case of dimension being more than 2 fixed_values must " \
+        "be specified so as to make a number of free dimensions equal 2 or 1."
+
+    if len(free_dimensions) == 1:
+        index_x = free_dimensions[0]
 
         if not label_x:
-            label_x = 'x'
+            label_x = f'X{index_x + 1}'
 
-        if not label_y:
-            label_y = 'f(x)'
-
-        x_grid = np.arange(bounds[0][0], bounds[0][1], 0.001)
-        x_grid = x_grid.reshape(len(x_grid), 1)
-        acqu = acquisition_function(x_grid)
-        acqu_normalized = (-acqu - min(-acqu)) / (max(-acqu - min(-acqu)))
-        m, v = model.predict(x_grid)
-
-        model.plot_density(bounds[0], alpha=.5)
-
-        plt.plot(x_grid, m, 'k-', lw=1, alpha=0.6)
-        plt.plot(x_grid, m - 1.96 * np.sqrt(v), 'k-', alpha=0.2)
-        plt.plot(x_grid, m + 1.96 * np.sqrt(v), 'k-', alpha=0.2)
-
-        plt.plot(Xdata, Ydata, 'r.', markersize=10)
-        plt.axvline(x=suggested_sample[len(suggested_sample) - 1], color='r')
-        factor = max(m + 1.96 * np.sqrt(v)) - min(m - 1.96 * np.sqrt(v))
-
-        plt.plot(x_grid, 0.2 * factor * acqu_normalized - abs(min(m - 1.96 * np.sqrt(v))) - 0.25 * factor, 'r-', lw=2,
-                 label='Acquisition (arbitrary units)')
-        plt.xlabel(label_x)
-        plt.ylabel(label_y)
-        plt.ylim(min(m - 1.96 * np.sqrt(v)) - 0.25 * factor, max(m + 1.96 * np.sqrt(v)) + 0.05 * factor)
-        plt.axvline(x=suggested_sample[len(suggested_sample) - 1], color='r')
-        plt.legend(loc='upper left')
-
-        if filename != None:
-            savefig(filename)
-        else:
-            plt.show()
-
-    if input_dim >= 2:
-        if fixed_values is None:
-            fixed_values = [None] * input_dim
-
-        free_dimensions = []
+        X_values = np.arange(bounds[index_x][0], bounds[index_x][1], 0.001).flatten()
+        n = len(X_values)
+        X = np.zeros((n, input_dim))
         for i, value in enumerate(fixed_values):
-            if value is None:
-                free_dimensions.append(i)
+            if value is not None:
+                X[:, i] = [value] * n
+        X[:, index_x] = X_values
+        X_values = X_values.reshape((n, 1))
 
-        assert len(free_dimensions) == 2, "In case of dimension being more than 2 fixed_values must" \
-                                          " be specified so as to make a number of free dimensions equal 2."
+        acqu = acquisition_function(X)
+        acqu_normalized = (-acqu - min(-acqu)) / (max(-acqu - min(-acqu)))  # normalize acquisition
+        m, v = model.predict(X)
+        plt.ioff()
+        plt.figure(figsize=(10, 5))
+        plt.subplot(2, 1, 1)
+        plt.plot(X_values, m, 'b-', label=u'Posterior mean', lw=2)
+        plt.fill(np.concatenate([X_values, X_values[::-1]]),
+                 np.concatenate([m - 1.9600 * np.sqrt(v),
+                                 (m + 1.9600 * np.sqrt(v))[::-1]]),
+                 alpha=.5, fc='b', ec='None', label='95% C. I.')
+        plt.plot(X_values, m - 1.96 * np.sqrt(v), 'b-', alpha=0.5)
+        plt.plot(X_values, m + 1.96 * np.sqrt(v), 'b-', alpha=0.5)
+        plt.plot(Xdata[:, index_x], Ydata, 'r.', markersize=10, label=u'Observations')
+        plt.axvline(x=suggested_sample[len(suggested_sample) - 1][index_x], color='r')
+        plt.title('Model and observations')
+        plt.ylabel('f(x)')
+        plt.xlabel(label_x)
+        plt.legend(loc='upper left')
+        plt.xlim(*bounds[index_x])
+        grid(True)
+        plt.subplot(2, 1, 2)
+        plt.axvline(x=suggested_sample[len(suggested_sample) - 1][index_x], color='r')
+        plt.plot(X_values, acqu_normalized, 'r-', lw=2)
+        plt.xlabel(label_x)
+        plt.ylabel('Acquisition value')
+        plt.title('Acquisition function')
+        grid(True)
+        plt.xlim(*bounds[index_x])
 
+    if (len(free_dimensions) == 2):
         index_x, index_y = free_dimensions
 
         if not label_x:
@@ -160,10 +137,10 @@ def plot_acquisition(bounds, input_dim, model, Xdata, Ydata, acquisition_functio
         plt.ylabel(label_y)
         plt.title('Acquisition function')
         plt.axis((bounds[index_x][0], bounds[index_x][1], bounds[index_y][0], bounds[index_y][1]))
-        if filename != None:
-            savefig(filename)
-        else:
-            plt.show()
+    if filename != None:
+        savefig(filename)
+    else:
+        plt.show()
 
 
 def plot_convergence(Xdata, best_Y, filename=None):
