@@ -8,14 +8,14 @@ from pylab import savefig
 import pylab
 
 
-def plot_acquisition(bounds, input_dim, model, Xdata, Ydata, acquisition_function, suggested_sample,
+def plot_acquisition(bounds, input_dim, model, Xdata, Ydata, acquisition_function, suggested_sample, fixed_values,
                      filename=None, label_x=None, label_y=None, color_by_step=True):
     '''
     Plots of the model and the acquisition function in 1D and 2D examples.
     '''
 
     # Plots in dimension 1
-    if input_dim ==1:
+    if input_dim == 1:
         # X = np.arange(bounds[0][0], bounds[0][1], 0.001)
         # X = X.reshape(len(X),1)
         # acqu = acquisition_function(X)
@@ -55,62 +55,82 @@ def plot_acquisition(bounds, input_dim, model, Xdata, Ydata, acquisition_functio
             label_y = 'f(x)'
 
         x_grid = np.arange(bounds[0][0], bounds[0][1], 0.001)
-        x_grid = x_grid.reshape(len(x_grid),1)
+        x_grid = x_grid.reshape(len(x_grid), 1)
         acqu = acquisition_function(x_grid)
-        acqu_normalized = (-acqu - min(-acqu))/(max(-acqu - min(-acqu)))
+        acqu_normalized = (-acqu - min(-acqu)) / (max(-acqu - min(-acqu)))
         m, v = model.predict(x_grid)
-
 
         model.plot_density(bounds[0], alpha=.5)
 
-        plt.plot(x_grid, m, 'k-',lw=1,alpha = 0.6)
-        plt.plot(x_grid, m-1.96*np.sqrt(v), 'k-', alpha = 0.2)
-        plt.plot(x_grid, m+1.96*np.sqrt(v), 'k-', alpha=0.2)
+        plt.plot(x_grid, m, 'k-', lw=1, alpha=0.6)
+        plt.plot(x_grid, m - 1.96 * np.sqrt(v), 'k-', alpha=0.2)
+        plt.plot(x_grid, m + 1.96 * np.sqrt(v), 'k-', alpha=0.2)
 
         plt.plot(Xdata, Ydata, 'r.', markersize=10)
-        plt.axvline(x=suggested_sample[len(suggested_sample)-1],color='r')
-        factor = max(m+1.96*np.sqrt(v))-min(m-1.96*np.sqrt(v))
+        plt.axvline(x=suggested_sample[len(suggested_sample) - 1], color='r')
+        factor = max(m + 1.96 * np.sqrt(v)) - min(m - 1.96 * np.sqrt(v))
 
-        plt.plot(x_grid,0.2*factor*acqu_normalized-abs(min(m-1.96*np.sqrt(v)))-0.25*factor, 'r-',lw=2,label ='Acquisition (arbitrary units)')
+        plt.plot(x_grid, 0.2 * factor * acqu_normalized - abs(min(m - 1.96 * np.sqrt(v))) - 0.25 * factor, 'r-', lw=2,
+                 label='Acquisition (arbitrary units)')
         plt.xlabel(label_x)
         plt.ylabel(label_y)
-        plt.ylim(min(m-1.96*np.sqrt(v))-0.25*factor,  max(m+1.96*np.sqrt(v))+0.05*factor)
-        plt.axvline(x=suggested_sample[len(suggested_sample)-1],color='r')
+        plt.ylim(min(m - 1.96 * np.sqrt(v)) - 0.25 * factor, max(m + 1.96 * np.sqrt(v)) + 0.05 * factor)
+        plt.axvline(x=suggested_sample[len(suggested_sample) - 1], color='r')
         plt.legend(loc='upper left')
 
-
-        if filename!=None:
+        if filename != None:
             savefig(filename)
         else:
             plt.show()
 
-    if input_dim == 2:
+    if input_dim >= 2:
+        if fixed_values is None:
+            fixed_values = [None] * input_dim
+
+        free_dimensions = []
+        for i, value in enumerate(fixed_values):
+            if value is None:
+                free_dimensions.append(i)
+
+        assert len(free_dimensions) == 2, "In case of dimension being more than 2 fixed_values must" \
+                                          " be specified so as to make a number of free dimensions equal 2."
+
+        index_x, index_y = free_dimensions
 
         if not label_x:
-            label_x = 'X1'
+            label_x = f'X{index_x + 1}'
 
         if not label_y:
-            label_y = 'X2'
+            label_y = f'X{index_y + 1}'
 
         n = Xdata.shape[0]
         colors = np.linspace(0, 1, n)
         cmap = plt.cm.Reds
         norm = plt.Normalize(vmin=0, vmax=1)
         points_var_color = lambda X: plt.scatter(
-            X[:,0], X[:,1], c=colors, label=u'Observations', cmap=cmap, norm=norm)
+            X[:, index_x], X[:, index_y], c=colors, label=u'Observations', cmap=cmap, norm=norm)
         points_one_color = lambda X: plt.plot(
-            X[:,0], X[:,1], 'r.', markersize=10, label=u'Observations')
-        X1 = np.linspace(bounds[0][0], bounds[0][1], 200)
-        X2 = np.linspace(bounds[1][0], bounds[1][1], 200)
+            X[:, index_x], X[:, index_y], 'r.', markersize=10, label=u'Observations')
+        X1 = np.linspace(bounds[index_x][0], bounds[index_x][1], 200)
+        X2 = np.linspace(bounds[index_y][0], bounds[index_y][1], 200)
         x1, x2 = np.meshgrid(X1, X2)
-        X = np.hstack((x1.reshape(200*200,1),x2.reshape(200*200,1)))
+        grid_point_num = 200 * 200
+
+        X = np.zeros((grid_point_num, input_dim))
+
+        for i, value in enumerate(fixed_values):
+            if value is not None:
+                X[:, i] = [value] * grid_point_num
+
+        X[:, index_x] = x1.reshape(200 * 200)
+        X[:, index_y] = x2.reshape(200 * 200)
         acqu = acquisition_function(X)
-        acqu_normalized = (-acqu - min(-acqu))/(max(-acqu - min(-acqu)))
-        acqu_normalized = acqu_normalized.reshape((200,200))
+        acqu_normalized = (-acqu - min(-acqu)) / (max(-acqu - min(-acqu)))
+        acqu_normalized = acqu_normalized.reshape((200, 200))
         m, v = model.predict(X)
-        plt.figure(figsize=(15,5))
+        plt.figure(figsize=(15, 5))
         plt.subplot(1, 3, 1)
-        plt.contourf(X1, X2, m.reshape(200,200),100)
+        plt.contourf(X1, X2, m.reshape(200, 200), 100)
         plt.colorbar()
         if color_by_step:
             points_var_color(Xdata)
@@ -118,10 +138,10 @@ def plot_acquisition(bounds, input_dim, model, Xdata, Ydata, acquisition_functio
             points_one_color(Xdata)
         plt.ylabel(label_y)
         plt.title('Posterior mean')
-        plt.axis((bounds[0][0],bounds[0][1],bounds[1][0],bounds[1][1]))
+        plt.axis((bounds[index_x][0], bounds[index_x][1], bounds[index_y][0], bounds[index_y][1]))
         ##
         plt.subplot(1, 3, 2)
-        plt.contourf(X1, X2, np.sqrt(v.reshape(200,200)),100)
+        plt.contourf(X1, X2, np.sqrt(v.reshape(200, 200)), 100)
         plt.colorbar()
         if color_by_step:
             points_var_color(Xdata)
@@ -130,17 +150,17 @@ def plot_acquisition(bounds, input_dim, model, Xdata, Ydata, acquisition_functio
         plt.xlabel(label_x)
         plt.ylabel(label_y)
         plt.title('Posterior sd.')
-        plt.axis((bounds[0][0],bounds[0][1],bounds[1][0],bounds[1][1]))
+        plt.axis((bounds[index_x][0], bounds[index_x][1], bounds[index_y][0], bounds[index_y][1]))
         ##
         plt.subplot(1, 3, 3)
-        plt.contourf(X1, X2, acqu_normalized,100)
+        plt.contourf(X1, X2, acqu_normalized, 100)
         plt.colorbar()
-        plt.plot(suggested_sample[:,0],suggested_sample[:,1],'m.', markersize=10)
+        plt.plot(suggested_sample[:, index_x], suggested_sample[:, index_y], 'm.', markersize=10)
         plt.xlabel(label_x)
         plt.ylabel(label_y)
         plt.title('Acquisition function')
-        plt.axis((bounds[0][0],bounds[0][1],bounds[1][0],bounds[1][1]))
-        if filename!=None:
+        plt.axis((bounds[index_x][0], bounds[index_x][1], bounds[index_y][0], bounds[index_y][1]))
+        if filename != None:
             savefig(filename)
         else:
             plt.show()
@@ -151,13 +171,13 @@ def plot_convergence(Xdata, best_Y, filename=None):
     Plots to evaluate the convergence of standard Bayesian optimization algorithms
     '''
     n = Xdata.shape[0]
-    aux = (Xdata[1:n,:]-Xdata[0:n-1,:])**2
+    aux = (Xdata[1:n, :] - Xdata[0:n - 1, :]) ** 2
     distances = np.sqrt(aux.sum(axis=1))
 
     ## Distances between consecutive x's
-    plt.figure(figsize=(10,5))
+    plt.figure(figsize=(10, 5))
     plt.subplot(1, 2, 1)
-    plt.plot(list(range(n-1)), distances, '-ro')
+    plt.plot(list(range(n - 1)), distances, '-ro')
     plt.xlabel('Iteration')
     plt.ylabel('d(x[n], x[n-1])')
     plt.title('Distance between consecutive x\'s')
@@ -165,13 +185,13 @@ def plot_convergence(Xdata, best_Y, filename=None):
 
     # Estimated m(x) at the proposed sampling points
     plt.subplot(1, 2, 2)
-    plt.plot(list(range(n)),best_Y,'-o')
+    plt.plot(list(range(n)), best_Y, '-o')
     plt.title('Value of the best selected sample')
     plt.xlabel('Iteration')
     plt.ylabel('Best y')
     grid(True)
 
-    if filename!=None:
+    if filename != None:
         savefig(filename)
     else:
         plt.show()

@@ -266,7 +266,7 @@ class BO(object):
         else:
             self.model_parameters_iterations = np.vstack((self.model_parameters_iterations,self.model.get_model_parameters()))
 
-    def plot_acquisition(self, filename=None, label_x=None, label_y=None):
+    def plot_acquisition(self, filename=None, label_x=None, label_y=None, fixed_values=None):
         """
         Plots the model and the acquisition function.
             if self.input_dim = 1: Plots data, mean and variance in one plot and the acquisition function in another plot
@@ -274,6 +274,7 @@ class BO(object):
         :param filename: name of the file where the plot is saved
         :param label_x: Graph's x-axis label, if None it is renamed to 'x' (1D) or 'X1' (2D)
         :param label_y: Graph's y-axis label, if None it is renamed to 'f(x)' (1D) or 'X2' (2D)
+        :param fixed_values: 1D array of size dimension of X (X.shape[1]) with values to fix
         """
         if self.model.model is None:
             from copy import deepcopy
@@ -293,11 +294,12 @@ class BO(object):
                                 model_to_plot.model.Y,
                                 self.acquisition.acquisition_function,
                                 self.suggest_next_locations(),
+                                fixed_values,
                                 filename,
                                 label_x,
                                 label_y)
 
-    def plot_convergence(self,filename=None):
+    def plot_convergence(self, filename=None):
         """
         Makes twp plots to evaluate the convergence of the model:
             plot 1: Iterations vs. distance between consecutive selected x's
