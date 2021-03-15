@@ -52,6 +52,7 @@ iterate.dat
 docs/_build
 .pytest_cache
 .idea
+GPyOpt/.idea
 
 # Virtual environments
 venv/

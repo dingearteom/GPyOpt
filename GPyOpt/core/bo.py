@@ -264,9 +264,11 @@ class BO(object):
         if self.model_parameters_iterations is None:
             self.model_parameters_iterations = self.model.get_model_parameters()
         else:
-            self.model_parameters_iterations = np.vstack((self.model_parameters_iterations,self.model.get_model_parameters()))
+            self.model_parameters_iterations = np.vstack((self.model_parameters_iterations,
+                                                          self.model.get_model_parameters()))
 
-    def plot_acquisition(self, filename=None, label_x=None, label_y=None, fixed_values=None):
+    def plot_acquisition(self, filename=None, label_x=None, label_y=None, fixed_values=None, remove_outsiders=True,
+                         outsider_percents=(0.025, 0.025)):
         """
         Plots the model and the acquisition function.
             if self.input_dim = 1: Plots data, mean and variance in one plot and the acquisition function in another plot
@@ -275,6 +277,9 @@ class BO(object):
         :param label_x: Graph's x-axis label, if None it is renamed to 'x' (1D) or 'X1' (2D)
         :param label_y: Graph's y-axis label, if None it is renamed to 'f(x)' (1D) or 'X2' (2D)
         :param fixed_values: 1D array of size dimension of X (X.shape[1]) with values to fix
+        :param remove_outsiders: bool, whether to remove points with extreme values on one-dimensional plot.
+        :param outsider_percents: tuple of size 2 (min_value_percent, max_value_percent) - percent of outsiders from
+        both sides.
         """
         if self.model.model is None:
             from copy import deepcopy
@@ -295,6 +300,8 @@ class BO(object):
                                 self.acquisition.acquisition_function,
                                 self.suggest_next_locations(),
                                 fixed_values,
+                                remove_outsiders,
+                                outsider_percents,
                                 filename,
                                 label_x,
                                 label_y)

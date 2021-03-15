@@ -6,10 +6,12 @@ from pylab import grid
 import matplotlib.pyplot as plt
 from pylab import savefig
 import pylab
+import math
 
 
 def plot_acquisition(bounds, input_dim, model, Xdata, Ydata, acquisition_function, suggested_sample, fixed_values,
-                     filename=None, label_x=None, label_y=None, color_by_step=True):
+                     remove_outsiders=True, outsider_percents=(0.025, 0.025), filename=None, label_x=None,
+                     label_y=None, color_by_step=True):
     '''
     Plots of the model and the acquisition function in 1D and 2D examples.
     '''
@@ -33,13 +35,13 @@ def plot_acquisition(bounds, input_dim, model, Xdata, Ydata, acquisition_functio
             label_x = f'X{index_x + 1}'
 
         X_values = np.arange(bounds[index_x][0], bounds[index_x][1], 0.001).flatten()
-        n = len(X_values)
-        X = np.zeros((n, input_dim))
+        m = len(X_values)
+        X = np.zeros((m, input_dim))
         for i, value in enumerate(fixed_values):
             if value is not None:
-                X[:, i] = [value] * n
+                X[:, i] = [value] * m
         X[:, index_x] = X_values
-        X_values = X_values.reshape((n, 1))
+        X_values = X_values.reshape((m, 1))
 
         acqu = acquisition_function(X)
         acqu_normalized = (-acqu - min(-acqu)) / (max(-acqu - min(-acqu)))  # normalize acquisition
@@ -54,12 +56,27 @@ def plot_acquisition(bounds, input_dim, model, Xdata, Ydata, acquisition_functio
                  alpha=.5, fc='b', ec='None', label='95% C. I.')
         plt.plot(X_values, m - 1.96 * np.sqrt(v), 'b-', alpha=0.5)
         plt.plot(X_values, m + 1.96 * np.sqrt(v), 'b-', alpha=0.5)
-        plt.plot(Xdata[:, index_x], Ydata, 'r.', markersize=10, label=u'Observations')
+
+        if remove_outsiders:
+            Xdata_values = Xdata.values
+            Ydata_values = Ydata.values
+            n = Xdata_values.shape[0]
+            sorted_Ydata = sorted(Ydata_values)
+            min_value = sorted_Ydata[math.ceil(n * outsider_percents[0])]
+            max_value = sorted_Ydata[int(n * (1 - outsider_percents[1]))]
+            outsiders = np.bitwise_or(Ydata_values <= min_value, Ydata_values >= max_value).flatten()
+            plt.plot(Xdata_values[~outsiders][:, index_x], Ydata_values[~outsiders],
+                     'r.', markersize=10, label=u'Observations')
+        else:
+            plt.plot(Xdata[:, index_x], Ydata,
+                     'r.', markersize=10, label=u'Observations')
+
+
         plt.axvline(x=suggested_sample[len(suggested_sample) - 1][index_x], color='r')
         plt.title('Model and observations')
         plt.ylabel('f(x)')
         plt.xlabel(label_x)
-        plt.legend(loc='upper left')
+        plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
         plt.xlim(*bounds[index_x])
         grid(True)
         plt.subplot(2, 1, 2)
