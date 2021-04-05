@@ -267,8 +267,7 @@ class BO(object):
             self.model_parameters_iterations = np.vstack((self.model_parameters_iterations,
                                                           self.model.get_model_parameters()))
 
-    def plot_acquisition(self, filename=None, label_x=None, label_y=None, fixed_values=None, remove_outsiders=True,
-                         outsider_percents=(0.025, 0.025)):
+    def plot_acquisition(self, filename=None, label_x=None, label_y=None, fixed_values=None):
         """
         Plots the model and the acquisition function.
             if self.input_dim = 1: Plots data, mean and variance in one plot and the acquisition function in another plot
@@ -300,8 +299,6 @@ class BO(object):
                                 self.acquisition.acquisition_function,
                                 self.suggest_next_locations(),
                                 fixed_values,
-                                remove_outsiders,
-                                outsider_percents,
                                 filename,
                                 label_x,
                                 label_y)

@@ -10,8 +10,7 @@ import math
 
 
 def plot_acquisition(bounds, input_dim, model, Xdata, Ydata, acquisition_function, suggested_sample, fixed_values,
-                     remove_outsiders=True, outsider_percents=(0.025, 0.025), filename=None, label_x=None,
-                     label_y=None, color_by_step=True):
+                     filename=None, label_x=None, label_y=None, color_by_step=True):
     '''
     Plots of the model and the acquisition function in 1D and 2D examples.
     '''
@@ -57,19 +56,9 @@ def plot_acquisition(bounds, input_dim, model, Xdata, Ydata, acquisition_functio
         plt.plot(X_values, m - 1.96 * np.sqrt(v), 'b-', alpha=0.5)
         plt.plot(X_values, m + 1.96 * np.sqrt(v), 'b-', alpha=0.5)
 
-        if remove_outsiders:
-            Xdata_values = Xdata.values
-            Ydata_values = Ydata.values
-            n = Xdata_values.shape[0]
-            sorted_Ydata = sorted(Ydata_values)
-            min_value = sorted_Ydata[math.ceil(n * outsider_percents[0])]
-            max_value = sorted_Ydata[int(n * (1 - outsider_percents[1]))]
-            outsiders = np.bitwise_or(Ydata_values <= min_value, Ydata_values >= max_value).flatten()
-            plt.plot(Xdata_values[~outsiders][:, index_x], Ydata_values[~outsiders],
-                     'r.', markersize=10, label=u'Observations')
-        else:
-            plt.plot(Xdata[:, index_x], Ydata,
-                     'r.', markersize=10, label=u'Observations')
+
+        plt.plot(Xdata[:, index_x], Ydata,
+                 'r.', markersize=10, label=u'Observations')
 
 
         plt.axvline(x=suggested_sample[len(suggested_sample) - 1][index_x], color='r')
@@ -154,6 +143,7 @@ def plot_acquisition(bounds, input_dim, model, Xdata, Ydata, acquisition_functio
         plt.ylabel(label_y)
         plt.title('Acquisition function')
         plt.axis((bounds[index_x][0], bounds[index_x][1], bounds[index_y][0], bounds[index_y][1]))
+
     if filename != None:
         savefig(filename)
     else:
