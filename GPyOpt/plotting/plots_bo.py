@@ -77,7 +77,7 @@ def plot_acquisition(bounds, input_dim, model, Xdata, Ydata, acquisition_functio
         grid(True)
         plt.xlim(*bounds[index_x])
 
-    if (len(free_dimensions) == 2):
+    if len(free_dimensions) == 2:
         index_x, index_y = free_dimensions
 
         if not label_x:
@@ -94,10 +94,11 @@ def plot_acquisition(bounds, input_dim, model, Xdata, Ydata, acquisition_functio
             X[:, index_x], X[:, index_y], c=colors, label=u'Observations', cmap=cmap, norm=norm)
         points_one_color = lambda X: plt.plot(
             X[:, index_x], X[:, index_y], 'r.', markersize=10, label=u'Observations')
-        X1 = np.linspace(bounds[index_x][0], bounds[index_x][1], 200)
-        X2 = np.linspace(bounds[index_y][0], bounds[index_y][1], 200)
+        grid_size = 200
+        X1 = np.linspace(bounds[index_x][0], bounds[index_x][1], grid_size)
+        X2 = np.linspace(bounds[index_y][0], bounds[index_y][1], grid_size)
         x1, x2 = np.meshgrid(X1, X2)
-        grid_point_num = 200 * 200
+        grid_point_num = grid_size ** 2
 
         X = np.zeros((grid_point_num, input_dim))
 
@@ -105,15 +106,15 @@ def plot_acquisition(bounds, input_dim, model, Xdata, Ydata, acquisition_functio
             if value is not None:
                 X[:, i] = [value] * grid_point_num
 
-        X[:, index_x] = x1.reshape(200 * 200)
-        X[:, index_y] = x2.reshape(200 * 200)
+        X[:, index_x] = x1.reshape(grid_size ** 2)
+        X[:, index_y] = x2.reshape(grid_size ** 2)
         acqu = acquisition_function(X)
         acqu_normalized = (-acqu - min(-acqu)) / (max(-acqu - min(-acqu)))
-        acqu_normalized = acqu_normalized.reshape((200, 200))
+        acqu_normalized = acqu_normalized.reshape((grid_size, grid_size))
         m, v = model.predict(X)
         plt.figure(figsize=(15, 5))
         plt.subplot(1, 3, 1)
-        plt.contourf(X1, X2, m.reshape(200, 200), 100)
+        plt.contourf(X1, X2, m.reshape(grid_size, grid_size), 100)
         plt.colorbar()
         if color_by_step:
             points_var_color(Xdata)
@@ -124,14 +125,13 @@ def plot_acquisition(bounds, input_dim, model, Xdata, Ydata, acquisition_functio
         plt.axis((bounds[index_x][0], bounds[index_x][1], bounds[index_y][0], bounds[index_y][1]))
         ##
         plt.subplot(1, 3, 2)
-        plt.contourf(X1, X2, np.sqrt(v.reshape(200, 200)), 100)
+        plt.contourf(X1, X2, np.sqrt(v.reshape(grid_size, grid_size)), 100)
         plt.colorbar()
         if color_by_step:
             points_var_color(Xdata)
         else:
             points_one_color(Xdata)
         plt.xlabel(label_x)
-        plt.ylabel(label_y)
         plt.title('Posterior sd.')
         plt.axis((bounds[index_x][0], bounds[index_x][1], bounds[index_y][0], bounds[index_y][1]))
         ##
@@ -139,8 +139,6 @@ def plot_acquisition(bounds, input_dim, model, Xdata, Ydata, acquisition_functio
         plt.contourf(X1, X2, acqu_normalized, 100)
         plt.colorbar()
         plt.plot(suggested_sample[:, index_x], suggested_sample[:, index_y], 'm.', markersize=10)
-        plt.xlabel(label_x)
-        plt.ylabel(label_y)
         plt.title('Acquisition function')
         plt.axis((bounds[index_x][0], bounds[index_x][1], bounds[index_y][0], bounds[index_y][1]))
 
